@@ -1,20 +1,19 @@
 import requests, time, datetime, sys, pickle
 from pathlib import Path
 
-from helpers.args import params
-from helpers.constants import _COLLECTORS_FROM_DATE
+from helpers.constants import _COLLECTORS_FROM_DATE, _COLLECTORS_INTERVALS
 
 class Collector():
     
-    def __init__(self, idx_process, symbols, interval):
+    def __init__(self, idx_process, config):
 
         self.idx_process = idx_process
-        
-        self.interval = interval
-        self.symbols = symbols
+        self.config = config
+
         self.kline_start_time = _COLLECTORS_FROM_DATE
         self.kline_by_symbol = {}
         self.kline_total_saved = 0
+        self.kline_files_total_saved = 0
 
         self.getKlines()
 
@@ -35,7 +34,8 @@ class Collector():
 
     def getKlines(self):
 
-        for symbol in self.symbols:
+        for x in self.config:
+            interval, symbol = x
 
             print(f"[idx_process: {self.idx_process}] We begin with data collection for the symbol: {symbol}")
 
@@ -45,7 +45,7 @@ class Collector():
                     self.getKlinesFromBinance(
                         symbol= symbol, 
                         start_time= self.kline_start_time,
-                        interval= self.interval
+                        interval= interval
                     )
                 ):
                     self.kline_start_time = _COLLECTORS_FROM_DATE
@@ -62,7 +62,7 @@ class Collector():
         if start_time > datetime.datetime.now():
             return False
 
-        end_time = start_time + datetime.timedelta(minutes= 15*950)
+        end_time = start_time + datetime.timedelta(minutes= _COLLECTORS_INTERVALS[interval]*950)
 
         self.kline_start_time = end_time
 
@@ -77,38 +77,20 @@ class Collector():
         response = requests.get(f"https://api.binance.com/api/v3/klines?symbol={symbol.upper()}&interval={interval}&startTime={start_time}&endTime={end_time}&limit=1000")
         response = response.json()
 
-        if symbol not in self.kline_by_symbol:
-            self.kline_by_symbol[symbol] = []
+        self.kline_total_saved += len(response)
+        self.kline_files_total_saved += 1
 
-        if len(response) > 0:
+        collections_folder = f"collections/klines/{symbol}/{interval}"
+        collections_filename = f"{collections_folder}/{end_time}.pkl"
 
-            self.kline_total_saved += len(response)
+        Path(collections_folder).mkdir(
+            parents=True, 
+            exist_ok=True
+        )
+        
+        with open(collections_filename, 'wb') as file: 
+            pickle.dump(response, file)
 
-            self.kline_by_symbol[symbol] = self.kline_by_symbol[symbol] + response
-
-            x1 = datetime.datetime.fromtimestamp(self.kline_by_symbol[symbol][0][0] / 1000)
-            x2 = datetime.datetime.fromtimestamp(self.kline_by_symbol[symbol][-1][0] / 1000)
-            xd = x2 - x1
-            xd = xd.total_seconds() 
-            xd = xd / 60
-            xd = xd / 60
-
-            if xd >= 24:
-
-                collections_folder = f"collections/klines/{symbol}/{interval}"
-                collections_filename = f"{collections_folder}/{int(x2.timestamp())}.pkl"
-
-                Path(collections_folder).mkdir(
-                    parents=True, 
-                    exist_ok=True
-                )
-                
-                with open(collections_filename, 'wb') as file: pickle.dump(self.kline_by_symbol[symbol], file)
-
-                print(f"[idx_process: {self.idx_process}, {self.getProgress(x= end_time)}] ({symbol}) We save a new data file.")
-
-                self.kline_by_symbol[symbol] = []
-
-        print(f"[idx_process: {self.idx_process}, {self.getProgress(x= end_time)}] ({symbol}) We found {len(response)} new candles, we currently have: {self.kline_total_saved} sails saved")
+        print(f"[idx_process: {self.idx_process}, {self.getProgress(x= end_time)}] ({symbol}) We found {len(response)} new candles (in interval: {interval}), we currently have: {self.kline_total_saved} (in {self.kline_files_total_saved} files) sails saved")
 
         return True

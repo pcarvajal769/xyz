@@ -5,12 +5,20 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: --mode=analysis_process",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/manager.py",
+            "console": "integratedTerminal",
+            "args": ["--mode", "analysis_process"]
+        },
+        {
             "name": "Python: --mode=collector",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/manager.py",
             "console": "integratedTerminal",
             "args": ["--mode", "collector"]
-        }
+        },
     ]
 }
