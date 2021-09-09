@@ -9,12 +9,7 @@ from systems.handlers.timeframe import Timeframe
 class Core():
     def __init__(self):
 
-        self.charts = {
-            "movement_of_the_price": [],
-            "points_of_interest": [],
-            "smas": {},
-        }
-
+        self.charts = {}
         self.symbols = ['btcusdt']
 
         self.tf = Timeframe()
@@ -34,14 +29,13 @@ class Core():
 
     def processCandlestick(self, k):
         if k: 
-            
             # We process the "Kline" and we generate the variables to be used
             self.tf.processKline(k)
             self.getChartDataFromDict(d= self.tf.charts)
 
-            
             # We manage and verify opening orders
-            self.orders.checkTimeframe(k= k)
+            self.orders.checkAndOpen(k= k)
+            self.orders.checkAndClose(k= k)
             self.getChartDataFromDict(d= self.orders.charts)
 
     def getChartDataFromDict(self, d):
@@ -82,8 +76,8 @@ class Core():
             volume= True, 
             addplot= subplots,
             vlines= dict(
-                vlines= self.charts['buy_orders'],
-                colors= ['k'],
+                vlines= self.charts['vlines'],
+                colors= self.charts['vlines_colors'],
                 alpha= 0.1,
                 linewidths= 5,
             )
