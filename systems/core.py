@@ -1,3 +1,4 @@
+from matplotlib.pyplot import vlines
 import mplfinance, pandas, datetime, sys, math 
 
 from helpers.args import params
@@ -14,10 +15,10 @@ class Core():
             "smas": {},
         }
 
-        self.orders = Orders()
         self.symbols = ['btcusdt']
 
         self.tf = Timeframe()
+        self.orders = Orders(timeframe= self.tf)
 
         if int(params.backtesting) == 1:
             Kline(
@@ -34,14 +35,22 @@ class Core():
     def processCandlestick(self, k):
         if k: 
             
+            # We process the "Kline" and we generate the variables to be used
             self.tf.processKline(k)
+            self.getChartDataFromDict(d= self.tf.charts)
 
-            for key in self.tf.charts.keys():
+            
+            # We manage and verify opening orders
+            self.orders.checkTimeframe(k= k)
+            self.getChartDataFromDict(d= self.orders.charts)
 
-                if key not in self.charts:
-                    self.charts[key] = None
-                
-                self.charts[key] = self.tf.charts[key]
+    def getChartDataFromDict(self, d):
+        for key in d.keys():
+
+            if key not in self.charts:
+                self.charts[key] = None
+            
+            self.charts[key] = d[key]
 
     def buildChart(self):
 
@@ -71,7 +80,13 @@ class Core():
             movement_of_the_price, 
             type='line', 
             volume= True, 
-            addplot= subplots
+            addplot= subplots,
+            vlines= dict(
+                vlines= self.charts['buy_orders'],
+                colors= ['k'],
+                alpha= 0.1,
+                linewidths= 5,
+            )
         )
 
     

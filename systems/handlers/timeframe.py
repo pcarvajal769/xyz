@@ -1,4 +1,4 @@
-import mplfinance, pandas, datetime, sys, math 
+import datetime, sys
 
 from helpers.constants import _COLLECTORS_INTERVALS
 
@@ -12,6 +12,9 @@ class Timeframe():
         }
 
         self.tf = {}
+    
+    def get(self, symbol):
+        return self.tf[symbol]
 
     def processKline(self, k):
         
