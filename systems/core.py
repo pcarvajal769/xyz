@@ -1,9 +1,9 @@
 import mplfinance, pandas, datetime, sys, math 
 
-from helpers.constants import _COLLECTORS_INTERVALS
 from helpers.args import params
 from helpers.kline import Kline
 from systems.handlers.orders import Orders
+from systems.handlers.timeframe import Timeframe
 
 class Core():
     def __init__(self):
@@ -17,7 +17,7 @@ class Core():
         self.orders = Orders()
         self.symbols = ['btcusdt']
 
-        self.tf = {}
+        self.tf = Timeframe()
 
         if int(params.backtesting) == 1:
             Kline(
@@ -33,47 +33,19 @@ class Core():
 
     def processCandlestick(self, k):
         if k: 
-            symbol = k['symbol']
-
-            if symbol not in self.tf:
-                self.tf[symbol] = {
-                    'sma': {},
-                    'sma_keys': [60, 200],
-                    'sma_sums': {},
-                    'history': {},
-                }
             
+            self.tf.processKline(k)
 
-            for sma in self.tf[symbol]['sma_keys']:
+            for key in self.tf.charts.keys():
 
-                if sma not in self.tf[symbol]['sma']:
-                    self.tf[symbol]['sma'][sma] = 0
-
-                if sma not in self.tf[symbol]['history']:
-                    self.tf[symbol]['history'][sma] = []
-
-                if sma not in self.tf[symbol]['sma_sums']:
-                    self.tf[symbol]['sma_sums'][sma] = 0
-
-                self.tf[symbol]['history'][sma].append(k)
-
-                if k['close_time'] >= self.tf[symbol]['history'][sma][0]['close_time'] + datetime.timedelta(minutes= sma * _COLLECTORS_INTERVALS[k['interval']]):
-                    self.tf[symbol]['sma_sums'][sma] -= self.tf[symbol]['history'][sma][0]['close']
-                                        
-                    del self.tf[symbol]['history'][sma][0]
+                if key not in self.charts:
+                    self.charts[key] = None
                 
-                self.tf[symbol]['sma_sums'][sma] += k['close']
-                self.tf[symbol]['sma'][sma] = self.tf[symbol]['sma_sums'][sma] / len(self.tf[symbol]['history'][sma])
-
-                if sma not in self.charts['smas']:
-                    self.charts['smas'][sma] = []
-                
-                self.charts['smas'][sma].append(self.tf[symbol]['sma'][sma])
-
-            # To graph prices
-            self.charts['movement_of_the_price'].append(k)
+                self.charts[key] = self.tf.charts[key]
 
     def buildChart(self):
+
+        subplots = []
 
         movement_of_the_price = pandas.DataFrame(
             self.charts['movement_of_the_price'],
@@ -82,34 +54,24 @@ class Core():
 
         movement_of_the_price.index = pandas.DatetimeIndex(movement_of_the_price['close_time'])
 
-        sma1 = pandas.DataFrame(
-            self.charts['smas'][60]
-        )
-        
-        sma1 = mplfinance.make_addplot(
-            sma1,
-            type='line',
-            color='b',
-        )
+        for period in self.charts['smas'].keys():
 
-        sma2 = pandas.DataFrame(
-            self.charts['smas'][200]
-        )
-        
-        sma2 = mplfinance.make_addplot(
-            sma2,
-            type='line',
-            color='r',
-        )
+            sma = pandas.DataFrame(
+                self.charts['smas'][period]
+            )
+            
+            sma = mplfinance.make_addplot(
+                sma,
+                type='line',
+            )
+
+            subplots.append(sma)
 
         mplfinance.plot(
             movement_of_the_price, 
             type='line', 
             volume= True, 
-            addplot= [ 
-                sma1,
-                sma2,
-            ]
+            addplot= subplots
         )
 
     
