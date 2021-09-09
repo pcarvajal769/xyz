@@ -62,6 +62,7 @@ class Kline():
                             'number_of_trades': float(kline[8]),
                             'taker_buy_base_asset_volume': float(kline[9]),
                             'taker_buy_quote_asset_volume': float(kline[10]),
+                            'interval': interval,
                             'ignore': kline[11],
                         }
 
