@@ -11,9 +11,18 @@ class Core():
 
         self.charts = {}
         self.symbols = ['btcusdt']
+        self.configs = {
+            'orders': {
+                'max_open_orders': 1,
+                'take_profit': 7.5,
+                'stop_loss': 15,
+                'balance': 10000,
+                'loting': 100,
+            }
+        }
 
         self.tf = Timeframe()
-        self.orders = Orders(timeframe= self.tf)
+        self.orders = Orders(timeframe= self.tf, config= self.configs['orders'])
 
         if int(params.backtesting) == 1:
             Kline(
@@ -23,9 +32,26 @@ class Core():
             ).walkingAndProcessing(
                 callback= self.processCandlestick
             )
+        
+            self.getResume()
 
         if int(params.generate_chart) == 1:
             self.buildChart()
+
+    def getResume(self):
+        total_profits = 0
+        total_profits_percentage = 0
+        balance = self.configs['orders']['balance']
+
+        for order in self.orders.orders[1]:
+            total_profits += order['profits']['coin']
+
+        total_profits_percentage = (total_profits * 100) / balance
+
+        total_profits_percentage = round(total_profits_percentage, 2)
+        total_profits = round(total_profits, 4)
+
+        print(f"RESULT OF BACKTING: {total_profits} ({total_profits_percentage}%) of earnings with {len(self.orders.orders[1])} orders closed and orders {len(self.orders.orders[0])} open")
 
     def processCandlestick(self, k):
         if k: 

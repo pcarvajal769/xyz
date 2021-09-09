@@ -1,9 +1,10 @@
 import datetime, sys
 
 class Orders():
-    def __init__(self, timeframe):
+    def __init__(self, timeframe, config):
         
         self.orders = [[], []]
+        self.config = config
         self.tf = timeframe
         self.charts = {
             'vlines': [],
@@ -11,11 +12,6 @@ class Orders():
         }
 
     def checkAndOpen(self, k):
-
-        # Configuration variable
-        MAX_OPEN_ORDERS = 1
-        TAKE_PROFIT = 1
-        STOP_LOSS = 99
 
         symbol = k['symbol']
         close = k['close']
@@ -26,7 +22,7 @@ class Orders():
         if tf['sma'][60] > tf['sma'][200] and close > tf['sma'][60]:
 
             # We verify the maximum possible orders open
-            if len(self.orders[0]) < MAX_OPEN_ORDERS:
+            if len(self.orders[0]) < self.config['max_open_orders']:
 
                 # Opening of new orders
                 self.orders[0].append({
@@ -34,7 +30,7 @@ class Orders():
 
                     'method': 'long',
                     'market': 'futures',
-                    'loting': 100,
+                    'loting': self.config['balance'] * (self.config['loting'] / 100),
                     
                     'open': {
                         'price': close,
@@ -46,8 +42,8 @@ class Orders():
                         'time': None,
                     },
                     
-                    'take_profit': close + (close * (TAKE_PROFIT/100)),
-                    'stop_loss': close - (close * (STOP_LOSS/100)),
+                    'take_profit': close + (close * (self.config['take_profit']/100)),
+                    'stop_loss': close - (close * (self.config['stop_loss']/100)),
 
                     'status': 0,
 
@@ -65,7 +61,7 @@ class Orders():
             
         if tf['sma'][60] < tf['sma'][200] and close < tf['sma'][60]:
             # We verify the maximum possible orders open
-            if len(self.orders[0]) < MAX_OPEN_ORDERS:
+            if len(self.orders[0]) < self.config['max_open_orders']:
 
                 # Opening of new orders
                 self.orders[0].append({
@@ -73,7 +69,7 @@ class Orders():
 
                     'method': 'short',
                     'market': 'futures',
-                    'loting': 100,
+                    'loting': self.config['balance'] * (self.config['loting'] / 100),
                     
                     'open': {
                         'price': close,
@@ -85,8 +81,8 @@ class Orders():
                         'time': None,
                     },
                     
-                    'take_profit': close - (close * (TAKE_PROFIT/100)),
-                    'stop_loss': close + (close * (STOP_LOSS/100)),
+                    'take_profit': close - (close * (self.config['take_profit']/100)),
+                    'stop_loss': close + (close * (self.config['stop_loss']/100)),
 
                     'status': 0,
 
@@ -139,8 +135,6 @@ class Orders():
                 print(f"Order in the closed {symbol} symbol, with some profits from: {self.orders[0][idx]['profits']['coin']} ({self.orders[0][idx]['profits']['percentage']}%)")
 
                 self.orders[1].append(self.orders[0][idx])
-
-                print(f"Total Closed Orders: {len(self.orders[1])}")
 
                 # We eliminate the Order of Open Orders
                 del self.orders[0][idx]
