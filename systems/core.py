@@ -1,5 +1,5 @@
 from matplotlib.pyplot import vlines
-import mplfinance, pandas, datetime, sys, math 
+import mplfinance, pandas, datetime, sys, math, binance
 
 from helpers.args import params
 from helpers.kline import Kline
@@ -11,6 +11,7 @@ class Core():
 
         self.charts = {}
         self.symbols = ['btcusdt']
+        self.interval = '1h'
         self.configs = {
             'orders': {
                 'max_open_orders': 1,
@@ -27,7 +28,7 @@ class Core():
         if int(params.backtesting) == 1:
             Kline(
                 symbols= self.symbols,
-                interval= '1h',
+                interval= self.interval,
                 from_date= datetime.datetime.strptime('2021-06-01 01:01:01', '%Y-%m-%d %H:%M:%S').timestamp(),
             ).walkingAndProcessing(
                 callback= self.processCandlestick
@@ -35,8 +36,30 @@ class Core():
         
             self.getResume()
 
+        else: self.startBinanceWebSocket()
+
         if int(params.generate_chart) == 1:
             self.buildChart()
+
+    def startBinanceWebSocket(self):
+        streams = []
+
+        for symbol in self.symbols:
+            streams.append(f"{symbol}@kline_{self.interval}")
+        
+        wss = binance.ThreadedWebsocketManager(
+            # api_key="", 
+            # api_secret="",
+        )
+
+        wss.start()
+
+        wss.start_multiplex_socket(
+            callback= self.processCandlestick,
+            streams= streams
+        )
+
+        wss.join()
 
     def getResume(self):
         total_profits = 0
@@ -53,7 +76,35 @@ class Core():
 
         print(f"RESULT OF BACKTING: {total_profits} ({total_profits_percentage}%) of earnings with {len(self.orders.orders[1])} orders closed and orders {len(self.orders.orders[0])} open")
 
+    def refactorKlineData(self, k):
+        kline = k['data']['k']
+        symbol = kline['s'].lower()
+
+        if kline['x']:
+            return {
+                'symbol': symbol,
+                'open_time': datetime.datetime.fromtimestamp(kline['t']/1000),
+                'open': float(kline['o']),
+                'high': float(kline['h']),
+                'low': float(kline['l']),
+                'close': float(kline['c']),
+                'volume': float(kline['v']),
+                'close_time': datetime.datetime.fromtimestamp(kline['T']/1000),
+                'quote_asset_volume': float(kline['q']),
+                'number_of_trades': float(kline['n']),
+                'taker_buy_base_asset_volume': float(kline['V']),
+                'taker_buy_quote_asset_volume': float(kline['Q']),
+                'interval': kline['i'],
+                'ignore': kline['B'],
+            }
+        
+        else: return None
+
     def processCandlestick(self, k):
+        
+        if int(params.backtesting) == 0:
+            k=self.refactorKlineData(k)
+
         if k: 
             # We process the "Kline" and we generate the variables to be used
             self.tf.processKline(k)

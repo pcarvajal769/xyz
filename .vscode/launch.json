@@ -5,15 +5,15 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: --mode=analysis_process",
+            "name": "Python: Raltime",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/manager.py",
             "console": "integratedTerminal",
-            "args": ["--mode", "analysis_process"]
+            "args": ["--mode", "core"]
         },
         {
-            "name": "Python: --mode=collector",
+            "name": "Python: Collector",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/manager.py",
