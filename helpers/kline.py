@@ -10,21 +10,16 @@ class Kline():
     def __init__(
         self,
         interval,
-        symbol,
         symbols,
         from_date,
     ):
         self.interval = interval
-        self.symbol = symbol
         self.symbols = symbols
         self.from_date = from_date
 
     def walkingAndProcessing(self, callback):
         
-        if self.symbol:
-            klines_time = glob.glob(f"collections/klines/{self.symbol}/{self.interval}/*")
-        else: 
-            klines_time = glob.glob(f"collections/klines/btcusdt/{self.interval}/*")
+        klines_time = glob.glob(f"collections/klines/btcusdt/{self.interval}/*")
         
         r= []
         for idx, fn in enumerate(klines_time):
@@ -40,19 +35,9 @@ class Kline():
         klines_time.sort()
 
         for fn in klines_time:
-
-            if self.symbol is None:
-                for symbol in self.symbols:
-                    self.getKlinesFromFile(
-                        symbol= symbol, 
-                        interval= self.interval, 
-                        fn= fn, 
-                        callback= callback
-                    )
-
-            else:
+            for symbol in self.symbols:
                 self.getKlinesFromFile(
-                    symbol= self.symbol, 
+                    symbol= symbol, 
                     interval= self.interval, 
                     fn= fn, 
                     callback= callback

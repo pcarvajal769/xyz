@@ -1,9 +1,10 @@
 import mplfinance, pandas, datetime, sys, math 
 
+from helpers.args import params
 from helpers.kline import Kline
 from systems.handlers.orders import Orders
 
-class AnalysisProcess():
+class Core():
     def __init__(self):
 
         self.charts = {
@@ -16,16 +17,17 @@ class AnalysisProcess():
 
         self.tf = {}
 
-        Kline(
-            symbol= None,
-            symbols= self.symbols,
-            interval= '15m',
-            from_date= datetime.datetime.strptime('2021-06-01 01:01:01', '%Y-%m-%d %H:%M:%S').timestamp(),
-        ).walkingAndProcessing(
-            callback= self.processCandlestick
-        )
+        if int(params.backtesting) == 1:
+            Kline(
+                symbols= self.symbols,
+                interval= '15m',
+                from_date= datetime.datetime.strptime('2021-06-01 01:01:01', '%Y-%m-%d %H:%M:%S').timestamp(),
+            ).walkingAndProcessing(
+                callback= self.processCandlestick
+            )
 
-        self.buildChart()
+        if int(params.generate_chart) == 1:
+            self.buildChart()
 
     def processCandlestick(self, k):
         if k: 

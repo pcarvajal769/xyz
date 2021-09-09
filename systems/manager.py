@@ -3,12 +3,12 @@ import multiprocessing
 
 from helpers.constants import _SYMBOLS, _COLLECTORS_PROCESS, _COLLECTORS_INTERVALS
 from systems.collector import Collector
-from systems.analysis_process import AnalysisProcess
+from systems.core import Core
 
 class Manager():
 
-    def startAnalysisProcess(self):
-        AnalysisProcess()
+    def startCore(self):
+        Core()
 
     def startCollector(self):
         

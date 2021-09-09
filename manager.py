@@ -10,8 +10,8 @@ if params.mode == 'collector':
     if __name__ == '__main__':
         for p in processes: p.start()
 
-if params.mode == 'analysis_process':
-    manager.startAnalysisProcess()
+if params.mode == 'core':
+    manager.startCore()
 
 if params.mode == 'optimization':
     pass
