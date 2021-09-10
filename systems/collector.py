@@ -74,8 +74,12 @@ class Collector():
         end_time = end_time * 1000
         end_time = int(end_time)
 
-        response = requests.get(f"https://api.binance.com/api/v3/klines?symbol={symbol.upper()}&interval={interval}&startTime={start_time}&endTime={end_time}&limit=1000")
-        response = response.json()
+        response = []
+
+        try:
+            response = requests.get(f"https://api.binance.com/api/v3/klines?symbol={symbol.upper()}&interval={interval}&startTime={start_time}&endTime={end_time}&limit=1000")
+            response = response.json()
+        except: pass
 
         self.kline_total_saved += len(response)
         self.kline_files_total_saved += 1
