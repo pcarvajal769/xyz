@@ -2,6 +2,11 @@ import datetime, sys, traceback, pickle
 
 from helpers.args import params
 
+# Libraries to manage orders or opening of orders with binance
+from binance.client import Client
+from binance.enums import *
+client = Client('Ki2xmL8CftYKUK1RoxGfz3NIcuXg8qpkm578ljZSd3JEo8n4dG4AvIf4zYoUaH1b', 'tBEiFugEvKTQeXQRVBkVl7wyLtr2Z0it7MwxAwmp21GahdjYZM4PwO49Wak2rXfu')
+
 class Orders():
     def __init__(self, timeframe, config):
         
@@ -25,6 +30,55 @@ class Orders():
         with open(f"collections/orders.pkl", 'wb') as file: 
             pickle.dump(self.orders, file)
 
+    def binanceOpenAnOrder(self, order):
+
+        if order['market'] == 'spot':
+
+            loting = round(order['loting'] / order['open']['price'], 4)
+            loting = float(loting)
+
+            binance_response = client.create_order(
+                symbol= order['symbol'].upper(),
+                side= SIDE_BUY if order['status'] == 0 else SIDE_SELL,
+                type= ORDER_TYPE_MARKET,
+                quantity= loting,
+                recvWindow= 60000,
+            )
+
+            if order['status'] == 0:
+                self.orders[0][-1]['binance_response'] = binance_response
+
+            if order['status'] == 1:
+                self.orders[1][-1]['binance_response'] = binance_response
+
+            print(f"Binance respose: {self.orders[1][-1]['binance_response']}")
+
+            self.saveCurentOrdersList()
+
+        if order['market'] == 'futures':
+
+            loting = round(order['loting'], 0)
+            loting = float(loting)
+
+            binance_response = client.futures_create_order(
+                quantity=loting,
+                symbol=order['symbol'].upper(),
+                type=ORDER_TYPE_MARKET,
+                side=SIDE_BUY if order['status'] == 0 else SIDE_SELL,
+                closePosition=False,
+                reduceOnly=False
+            )
+
+            if order['status'] == 0:
+                self.orders[0][-1]['binance_response'] = binance_response
+
+            if order['status'] == 1:
+                self.orders[1][-1]['binance_response'] = binance_response
+
+            print(f"Binance respose: {self.orders[1][-1]['binance_response']}")
+            
+            self.saveCurentOrdersList()
+            
     def checkAndOpen(self, k):
 
         symbol = k['symbol']
@@ -33,7 +87,7 @@ class Orders():
 
         tf = self.tf.get(symbol)
 
-        if tf['sma'][60] > tf['sma'][200] and close > tf['sma'][60] or True:
+        if tf['sma'][60] > tf['sma'][200] and close > tf['sma'][60]:
 
             # We verify the maximum possible orders open
             if len(self.orders[0]) < self.config['max_open_orders']:
@@ -43,7 +97,7 @@ class Orders():
                     'symbol': symbol,
 
                     'method': 'long',
-                    'market': 'futures',
+                    'market': 'spot',
                     'loting': self.config['balance'] * (self.config['loting'] / 100),
                     
                     'open': {
@@ -68,6 +122,7 @@ class Orders():
                 })
 
                 self.saveCurentOrdersList()
+                self.binanceOpenAnOrder(order= self.orders[0][-1])
 
                 print(f"A new order was opened in the {symbol} symbol, in the price: {close} and the date: {time}")
 
@@ -84,7 +139,7 @@ class Orders():
                     'symbol': symbol,
 
                     'method': 'short',
-                    'market': 'futures',
+                    'market': 'spot',
                     'loting': self.config['balance'] * (self.config['loting'] / 100),
                     
                     'open': {
@@ -109,6 +164,7 @@ class Orders():
                 })
 
                 self.saveCurentOrdersList()
+                self.binanceOpenAnOrder(order= self.orders[0][-1])
 
                 print(f"A new order was opened in the {symbol} symbol, in the price: {close} and the date: {time}")
 
@@ -153,6 +209,9 @@ class Orders():
                 print(f"Order in the closed {symbol} symbol, with some profits from: {self.orders[0][idx]['profits']['coin']} ({self.orders[0][idx]['profits']['percentage']}%)")
 
                 self.orders[1].append(self.orders[0][idx])
+
+                # We execute the closure of the order
+                self.binanceOpenAnOrder(order= self.orders[1][-1])
 
                 # We eliminate the Order of Open Orders
                 del self.orders[0][idx]

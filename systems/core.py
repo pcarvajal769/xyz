@@ -17,8 +17,8 @@ class Core():
                 'max_open_orders': 1,
                 'take_profit': 7.5,
                 'stop_loss': 15,
-                'balance': 10000,
-                'loting': 100,
+                'balance': 100,
+                'loting': 50,
             }
         }
 
@@ -49,10 +49,7 @@ class Core():
         for symbol in self.symbols:
             streams.append(f"{symbol}@kline_{self.interval}")
         
-        wss = binance.ThreadedWebsocketManager(
-            # api_key="", 
-            # api_secret="",
-        )
+        wss = binance.ThreadedWebsocketManager()
 
         wss.start()
 
@@ -108,8 +105,6 @@ class Core():
             k=self.refactorKlineData(k)
 
         if k: 
-            
-            print(k)
 
             # We process the "Kline" and we generate the variables to be used
             self.tf.processKline(k)

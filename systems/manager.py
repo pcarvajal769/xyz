@@ -12,7 +12,7 @@ class Manager():
 
     def startCollector(self):
         
-        symbols_with_interval = _SYMBOLS['usdt']
+        symbols_with_interval = _SYMBOLS['busd']
         processes = []
 
         configs = []
