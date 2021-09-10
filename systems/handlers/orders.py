@@ -1,4 +1,6 @@
-import datetime, sys
+import datetime, sys, traceback, pickle
+
+from helpers.args import params
 
 class Orders():
     def __init__(self, timeframe, config):
@@ -11,6 +13,18 @@ class Orders():
             'vlines_colors': [],
         }
 
+        if int(params.backtesting) == 0:
+            try:
+                with open(f"collections/orders.pkl", 'rb') as file:
+                    self.orders = pickle.load(file)
+                    print(f"{len(self.orders[0])} Available Orders")
+            except:
+                print(f"There is no last directory with the Order List, we started from 0")
+
+    def saveCurentOrdersList(self):
+        with open(f"collections/orders.pkl", 'wb') as file: 
+            pickle.dump(self.orders, file)
+
     def checkAndOpen(self, k):
 
         symbol = k['symbol']
@@ -19,7 +33,7 @@ class Orders():
 
         tf = self.tf.get(symbol)
 
-        if tf['sma'][60] > tf['sma'][200] and close > tf['sma'][60]:
+        if tf['sma'][60] > tf['sma'][200] and close > tf['sma'][60] or True:
 
             # We verify the maximum possible orders open
             if len(self.orders[0]) < self.config['max_open_orders']:
@@ -52,6 +66,8 @@ class Orders():
                         'percentage': 0,
                     },
                 })
+
+                self.saveCurentOrdersList()
 
                 print(f"A new order was opened in the {symbol} symbol, in the price: {close} and the date: {time}")
 
@@ -91,6 +107,8 @@ class Orders():
                         'percentage': 0,
                     },
                 })
+
+                self.saveCurentOrdersList()
 
                 print(f"A new order was opened in the {symbol} symbol, in the price: {close} and the date: {time}")
 
@@ -138,3 +156,6 @@ class Orders():
 
                 # We eliminate the Order of Open Orders
                 del self.orders[0][idx]
+
+                # We save our current orders list
+                self.saveCurentOrdersList()

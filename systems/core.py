@@ -11,7 +11,7 @@ class Core():
 
         self.charts = {}
         self.symbols = ['btcusdt']
-        self.interval = '1h'
+        self.interval = '1m'
         self.configs = {
             'orders': {
                 'max_open_orders': 1,
@@ -36,7 +36,9 @@ class Core():
         
             self.getResume()
 
-        else: self.startBinanceWebSocket()
+        else: 
+            print(f"We started the bot in mode (realtime)")
+            self.startBinanceWebSocket()
 
         if int(params.generate_chart) == 1:
             self.buildChart()
@@ -101,11 +103,14 @@ class Core():
         else: return None
 
     def processCandlestick(self, k):
-        
+
         if int(params.backtesting) == 0:
             k=self.refactorKlineData(k)
 
         if k: 
+            
+            print(k)
+
             # We process the "Kline" and we generate the variables to be used
             self.tf.processKline(k)
             self.getChartDataFromDict(d= self.tf.charts)
